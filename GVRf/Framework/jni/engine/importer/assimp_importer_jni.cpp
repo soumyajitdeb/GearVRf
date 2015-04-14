@@ -28,6 +28,10 @@ JNIEXPORT jint JNICALL
 Java_org_gearvrf_NativeAssimpImporter_getNumberOfMeshes(
         JNIEnv * env, jobject obj, jlong jassimp_importer);
 JNIEXPORT jlong JNICALL
+Java_org_gearvrf_NativeAssimpImporter_loadScene(JNIEnv * env,
+		jobject obj, jlong jassimp_importer, jobject bitmap);
+
+JNIEXPORT jlong JNICALL
 Java_org_gearvrf_NativeAssimpImporter_getMesh(JNIEnv * env,
         jobject obj, jlong jassimp_importer, jint index);
 }
@@ -38,6 +42,15 @@ Java_org_gearvrf_NativeAssimpImporter_getNumberOfMeshes(
     std::shared_ptr<AssimpImporter> assimp_importer =
             *reinterpret_cast<std::shared_ptr<AssimpImporter>*>(jassimp_importer);
     return assimp_importer->getNumberOfMeshes();
+}
+
+JNIEXPORT jlong JNICALL
+Java_org_gearvrf_NativeAssimpImporter_loadScene(JNIEnv * env,
+		jobject obj, jlong jassimp_importer, jobject bitmap) {
+	std::shared_ptr<AssimpImporter> assimp_importer =
+			*reinterpret_cast<std::shared_ptr<AssimpImporter>*>(jassimp_importer);
+	std::shared_ptr<Scene> scene = assimp_importer->loadScene(env, obj, bitmap);
+	return reinterpret_cast<jlong>(new std::shared_ptr<Scene>(scene));
 }
 
 JNIEXPORT jlong JNICALL

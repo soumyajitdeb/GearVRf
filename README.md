@@ -1,3 +1,3 @@
 ## GearVRf
 
-### Project details you can find at www.gearvrf.org
+### Project details you can find at www.gearvrf.org [Testing]

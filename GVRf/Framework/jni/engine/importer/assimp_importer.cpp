@@ -155,9 +155,7 @@ void AssimpImporter::sceneRecursion(aiNode* node, const aiScene* aScene, std::sh
 			aiQuaterniont<float> rotation;
 			aiVector3t<float> position;
 			aTransform.Decompose(scaling, rotation, position);
-
 			int meshIndex = i;
-
 			transform->set_position(position.x, position.y, position.z);
 			transform->set_rotation(rotation.w, rotation.x, rotation.y, rotation.z);
 			transform->set_scale(scaling.x, scaling.y, scaling.z);
@@ -191,12 +189,14 @@ std::shared_ptr<Scene> AssimpImporter::loadScene(JNIEnv* env, jobject obj, jobje
 	std::shared_ptr<Camera> rightCamera(new PerspectiveCamera());
 	rightCamera->set_render_mask(0x2);
 
+	//	Left Camera object and its transform
 	std::shared_ptr<SceneObject> leftCameraObject(new SceneObject());
-
 	std::shared_ptr<Transform> transformLeftCameraObject(new Transform());
 	transformLeftCameraObject->set_owner_object(leftCameraObject);
 
 	float camera_separation_distance_ = 0.062f;
+
+	//	Sets transform for the Left and the Right Camera on the Camera Rig
 	glm::vec3 leftCameraPosition = glm::vec3(-camera_separation_distance_ * 0.5f, 0.0f, 0.0f);
 	glm::vec3 rightCameraPosition = glm::vec3(camera_separation_distance_ * 0.5f, 0.0f, 0.0f);
 
@@ -204,6 +204,7 @@ std::shared_ptr<Scene> AssimpImporter::loadScene(JNIEnv* env, jobject obj, jobje
 	leftCameraObject->attachTransform(leftCameraObject, transformLeftCameraObject);
 	leftCameraObject->attachCamera(leftCameraObject, leftCamera);
 
+	//	Right Camera object and its transform
 	std::shared_ptr<SceneObject> rightCameraObject(new SceneObject());
 	std::shared_ptr<Transform> transformRightCameraObject(new Transform());
 	transformRightCameraObject->set_owner_object(rightCameraObject);
@@ -211,6 +212,7 @@ std::shared_ptr<Scene> AssimpImporter::loadScene(JNIEnv* env, jobject obj, jobje
 	rightCameraObject->attachTransform(rightCameraObject, transformRightCameraObject);
 	rightCameraObject->attachCamera(rightCameraObject, rightCamera);
 
+	//	Camera Rig and its transform
 	std::shared_ptr<SceneObject> cameraRigObject(new SceneObject());
 	std::shared_ptr<Transform> transformCameraRigObject(new Transform());
 	cameraRigObject->attachTransform(cameraRigObject, transformCameraRigObject);
@@ -218,18 +220,27 @@ std::shared_ptr<Scene> AssimpImporter::loadScene(JNIEnv* env, jobject obj, jobje
 	cameraRig->attachLeftCamera(leftCamera);
 	cameraRig->attachRightCamera(rightCamera);
 	cameraRigObject->attachCameraRig(cameraRigObject, cameraRig);
+
+	//	Adds the Camera Rig Scene Object to the Scene
 	scenePtr->addSceneObject(cameraRigObject);
+
+	//	Adds the Left and the Right Camera to the Camera Rig
 	cameraRigObject->addChildObject(cameraRigObject, leftCameraObject);
 	cameraRigObject->addChildObject(cameraRigObject, rightCameraObject);
+
+	//	Sets the Camera Rig as the main camera rig for the scene
 	scenePtr->set_main_camera_rig(cameraRig);
+
+	//	Get the pointer to the scene
 	const aiScene *aScnPtr = assimp_importer_->GetScene();
 
 	// Default transformation
 	aiMatrix4x4 identityMatrix;
 
-	// Start the scene recursion
+	// Start the scene recursion for all the nodes in the hierarchy
 	sceneRecursion(aScnPtr->mRootNode, aScnPtr, scenePtr, env, obj, bitmap, identityMatrix);
 
+	//	Returns the scene pointer
 	return std::shared_ptr<Scene>(scenePtr);
 }
 }

@@ -59,6 +59,11 @@ void Renderer::renderCamera(std::shared_ptr<Scene> scene,
             std::shared_ptr<RenderData> render_data = (*it)->render_data();
             if (render_data != 0) {
                 if (render_data->material() != 0) {
+
+                    // Frustum Culling
+                    LOGE("Frustum Culling");
+                	std::shared_ptr<Mesh> cuttentMesh = render_data->mesh();
+
                     render_data_vector.push_back(render_data);
                 }
             }

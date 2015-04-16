@@ -219,6 +219,8 @@ public:
     }
 
     std::shared_ptr<Mesh> getBoundingBox() const;
+	float* getBoundingBoxInfo();		// Xmin, Ymin, Zmin and Xmax, Ymax, Zmax
+
 
     // /////////////////////////////////////////////////
     //  code for vertex attribute location

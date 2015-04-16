@@ -118,9 +118,20 @@ void AssimpImporter::sceneRecursion(aiNode* node, const aiScene* aScene, std::sh
 
 				} else {
 					if ((ai_material->GetTextureCount(aiTextureType_DIFFUSE)) <= 0) {
-						// Not texture file found so apply default texture
-						std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
-						material->setTexture("main_texture", texture);
+						aiColor3D matColor (0.f,0.f,0.f);
+						if(AI_SUCCESS != ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, matColor)) {
+							// No color or texture file found for the material so apply default texture
+							std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
+							material->setTexture("main_texture", texture);
+						} else {
+							// Material has color so sets the color
+							material->setVec3("color", glm::vec3(matColor.r, matColor.g, matColor.b));
+							float matOpacity = 1.0f;
+							if(AI_SUCCESS != ai_material->Get(AI_MATKEY_OPACITY, matOpacity)) {
+								// Material has opacity so sets the opacity
+								material->setFloat("opacity", matOpacity);
+							}
+						}
 					} else {
 						// About to enter Java side.
 						jobject mBitmap = env->CallStaticObjectMethod(texClass, mID, texFileName);

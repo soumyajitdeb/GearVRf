@@ -76,6 +76,9 @@ private:
             std::shared_ptr<PostEffectData> post_effect_data,
             std::shared_ptr<PostEffectShaderManager> post_effect_shader_manager);
 
+    static void buildFrustum(float frustum[6][4], float mvpMat[16]);
+    static bool isCubeInFrustum( float frustum[6][4], float xmin, float ymin, float zmin, float xmax, float ymax, float zmax);
+
     Renderer(const Renderer& render_engine);
     Renderer(Renderer&& render_engine);
     Renderer& operator=(const Renderer& render_engine);

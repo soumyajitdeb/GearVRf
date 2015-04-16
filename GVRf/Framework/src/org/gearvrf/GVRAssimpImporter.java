@@ -33,13 +33,14 @@ class GVRAssimpImporter extends GVRHybridObject {
     int getNumberOfMeshes() {
         return NativeAssimpImporter.getNumberOfMeshes(getPtr());
     }
+    
     /**
      * @return Loads the 3D model.
      */	 
-	GVRScene loadScene(Bitmap bitmap)
-	{
-		return new GVRScene(getGVRContext(), NativeAssimpImporter.loadScene(getPtr(), bitmap));
-	}
+    GVRScene loadScene(Bitmap bitmap)
+    {
+    	return new GVRScene(getGVRContext(), NativeAssimpImporter.loadScene(getPtr(), bitmap));
+    }
 	
     /**
      * Retrieves a specific mesh from the imported 3D model.

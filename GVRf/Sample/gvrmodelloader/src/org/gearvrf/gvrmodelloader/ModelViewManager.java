@@ -28,8 +28,11 @@ public class ModelViewManager extends GVRScript {
 		// Loads the model
 		gvrContext.loadScene("sponza.dae");
 		
+		//Un-comment the following line to test the simple walled cube model
+		//gvrContext.loadScene("walled_cube.dae");
+		
 		// Sets a custom camera position
-		gvrContext.getMainScene().getMainCameraRig().getOwnerObject().getTransform().setPosition(0.0f, 5.0f, 0.0f);	
+		gvrContext.getMainScene().getMainCameraRig().getOwnerObject().getTransform().setPosition(5.0f, 5.0f, 0.0f);	
     }
 
     @Override

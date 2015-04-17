@@ -296,104 +296,97 @@ public abstract class GVRContext {
         return mesh;
     }
 
+    /**
+     * Generates default color for missing textures in the modelling file.
+     *
+     */
+    private static final int WIDTH = 50;
+    private static final int HEIGHT = 50;
+    private static final int STRIDE = 64;    // must be >= WIDTH
 
+    private static int[] createColors() 
+    {
+        int[] colors = new int[STRIDE * HEIGHT];
+        for (int y = 0; y < HEIGHT; y++)
+        {
+            for (int x = 0; x < WIDTH; x++)
+            {
+                int r = x * 255 / (WIDTH - 1);
+                int g = y * 255 / (HEIGHT - 1);
+                int b = 255 - Math.min(r, g);
+                int a = Math.max(r, g);
+                colors[y * STRIDE + x] = (a << 24) | (r << 16) | (g << 8) | b;
+            }
+        }
+        return colors;
+    }   
 
-	
+    /**
+     * Loads the complete scene from the imported 3D modelling file.
+     * 
+     * @param fileName
+     *            The name of a 3D model file, relative to the assets directory.
+     *            The assets directory may contain an arbitrarily complex tree
+     *            of subdirectories; the file name can specify any location in
+     *            or under the assets directory.
+     */
+    public void loadScene(String fileName)
+    {
+        GVRAssimpImporter assimpImporter = GVRImporter.readFileFromAssets(this, fileName);
+        //Default bitmap for objects whose texture are not present or there is some texture error
+        int[] mColors = createColors();
+        int[] colors = mColors;
+        Bitmap defaultBitmap = Bitmap.createBitmap(colors, 0, STRIDE, WIDTH, HEIGHT, Bitmap.Config.RGB_565);
+        //Scene
+        GVRScene completeScene = assimpImporter.loadScene(defaultBitmap);
+        this.setMainScene(completeScene);
+    }
 
-	/**
-	 * Generates default color for missing textures in the modelling file.
-	 *
-	 */
-	private static final int WIDTH = 50;
-	private static final int HEIGHT = 50;
-	private static final int STRIDE = 64;   // must be >= WIDTH
-
-	private static int[] createColors() 
-	{
-		int[] colors = new int[STRIDE * HEIGHT];
-		for (int y = 0; y < HEIGHT; y++)
-		{
-			for (int x = 0; x < WIDTH; x++)
-			{
-				int r = x * 255 / (WIDTH - 1);
-				int g = y * 255 / (HEIGHT - 1);
-				int b = 255 - Math.min(r, g);
-				int a = Math.max(r, g);
-				colors[y * STRIDE + x] = (a << 24) | (r << 16) | (g << 8) | b;
-			}
-		}
-		return colors;
-	}	
-
-	/**
-	 * Loads the complete scene from the imported 3D modelling file.
-	 * 
-	 * @param fileName
-	 *            The name of a 3D model file, relative to the assets directory.
-	 *            The assets directory may contain an arbitrarily complex tree
-	 *            of subdirectories; the file name can specify any location in
-	 *            or under the assets directory.
-	 */
-	public void loadScene(String fileName)
-	{
-
-		GVRAssimpImporter assimpImporter = GVRImporter.readFileFromAssets(this, fileName);
-
-		//Default bitmap for objects whose texture are not present or there is some texture error
-		int[] mColors = createColors();
-		int[] colors = mColors;
-		Bitmap defaultBitmap = Bitmap.createBitmap(colors, 0, STRIDE, WIDTH, HEIGHT, Bitmap.Config.RGB_565);
-
-		//Scene
-		GVRScene completeScene = assimpImporter.loadScene(defaultBitmap);
-		this.setMainScene(completeScene);
-	}
-
-	/**
-	 * Loads file placed in the assets folder, as a {@link Bitmap}.
-	 * 
-	 * <p>
-	 * Note that this method may take hundreds of milliseconds to return: unless
-	 * the bitmap is quite tiny, you probably don't want to call this directly
-	 * from your {@link GVRScript#onStep() onStep()} callback as that is called
-	 * once per frame, and a long call will cause you to miss frames.
-	 * 
-	 * <p>
-	 * Note also that this method does no scaling, and will return a full-size
-	 * {@link Bitmap}. Loading (say) an unscaled photograph may abort your app:
-	 * Use pre-scaled images, or {@link BitmapFactory} methods which give you
-	 * more control over the image size.
-	 * 
-	 * @param fileName
-	 *            The name of a file, relative to the assets directory. The
-	 *            assets directory may contain an arbitrarily complex tree of
-	 *            subdirectories; the file name can specify any location in or
-	 *            under the assets directory.
-	 * @return The file as a bitmap, or {@code null} if file path does not exist
-	 *         or the file can not be decoded into a Bitmap.
-	 */
-	public static Bitmap loadBitmap(String fileName) {
-		if (fileName == null) {
-			throw new IllegalArgumentException("File name should not be null.");
-		}
-		InputStream stream = null;
-		Bitmap bitmap = null;
-		try {
-			try {
-				stream = mContext.getAssets().open(fileName);
-				return bitmap = BitmapFactory.decodeStream(stream);
-			} finally {
-				if (stream != null) {
-					stream.close();
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			// Don't discard a valid Bitmap because of an IO error closing the
-			// file!
-			return bitmap;
-		}
-	}
+    /**
+     * Loads file placed in the assets folder, as a {@link Bitmap}.
+     * 
+     * <p>
+     * Note that this method may take hundreds of milliseconds to return: unless
+     * the bitmap is quite tiny, you probably don't want to call this directly
+     * from your {@link GVRScript#onStep() onStep()} callback as that is called
+     * once per frame, and a long call will cause you to miss frames.
+     * 
+     * <p>
+     * Note also that this method does no scaling, and will return a full-size
+     * {@link Bitmap}. Loading (say) an unscaled photograph may abort your app:
+     * Use pre-scaled images, or {@link BitmapFactory} methods which give you
+     * more control over the image size.
+     * 
+     * @param fileName
+     *            The name of a file, relative to the assets directory. The
+     *            assets directory may contain an arbitrarily complex tree of
+     *            subdirectories; the file name can specify any location in or
+     *            under the assets directory.
+     * @return The file as a bitmap, or {@code null} if file path does not exist
+     *         or the file can not be decoded into a Bitmap.
+     */
+    public static Bitmap loadBitmap(String fileName) {
+        if (fileName == null) {
+            throw new IllegalArgumentException("File name should not be null.");
+        }
+        InputStream stream = null;
+        Bitmap bitmap = null;
+        try {
+            try {
+                stream = mContext.getAssets().open(fileName);
+                return bitmap = BitmapFactory.decodeStream(stream);
+            } finally {
+                if (stream != null) {
+                    stream.close();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Don't discard a valid Bitmap because of an IO error closing the
+            // file!
+            return bitmap;
+        }
+    }
 
     /**
      * Loads file placed in the assets folder, as a {@link GVRBitmapTexture}.

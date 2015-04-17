@@ -74,184 +74,173 @@ std::shared_ptr<Mesh> AssimpImporter::getMesh(int index) {
 
 void AssimpImporter::sceneRecursion(aiNode* node, const aiScene* aScene, std::shared_ptr<Scene> scnPtr, JNIEnv * env, jobject obj, jobject bitmap, aiMatrix4x4 accumulatedTransform)
 {
-	for(int i=0; i < node->mNumMeshes; i++)
-	{
-		std::shared_ptr<SceneObject> scnObject(new SceneObject());
+    for(int i=0; i < node->mNumMeshes; i++)
+    {
+        std::shared_ptr<SceneObject> scnObject(new SceneObject());
 
-		// Creates a scene object for the node children meshes.
-		if(scnObject->render_data() == NULL)
-		{
-			// Scene Object has no render data.
+        // Creates a scene object for the node children meshes.
+        if(scnObject->render_data() == NULL)
+        {
+            // Scene Object has no render data.
 
-			// Mesh
-			std::shared_ptr<Mesh> mesh = getMesh(node->mMeshes[i]);
+            // Mesh
+            std::shared_ptr<Mesh> mesh = getMesh(node->mMeshes[i]);
 
-			// New render data object.
-			std::shared_ptr<RenderData> renderData(new RenderData());
+            // New render data object.
+            std::shared_ptr<RenderData> renderData(new RenderData());
 
-			// Set the mesh to the render data.
-			renderData->set_mesh(mesh);
+            // Set the mesh to the render data.
+            renderData->set_mesh(mesh);
 
-			// Set material.
-			aiMesh* ai_mesh = aScene->mMeshes[node->mMeshes[i]];
-			aiMaterial* ai_material = aScene->mMaterials[ai_mesh->mMaterialIndex];
+            // Set material.
+            aiMesh* ai_mesh = aScene->mMeshes[node->mMeshes[i]];
+            aiMaterial* ai_material = aScene->mMaterials[ai_mesh->mMaterialIndex];
 
-			// Defines a shader with shader type 0. UNLIT_SHADER = 0
-			std::shared_ptr<Material> material(new Material(static_cast<Material::ShaderType>(0)));
+            // Defines a shader with shader type 0. UNLIT_SHADER = 0
+            std::shared_ptr<Material> material(new Material(static_cast<Material::ShaderType>(0)));
 
-			// Actual texture image
-			aiString textureImage;
-			ai_material->GetTexture(aiTextureType_DIFFUSE, i, &textureImage);
-			jstring texFileName = env->NewStringUTF(textureImage.C_Str());
-			jclass texClass = env->FindClass("org/gearvrf/GVRContext");
+            // Actual texture image
+            aiString textureImage;
+            ai_material->GetTexture(aiTextureType_DIFFUSE, i, &textureImage);
+            jstring texFileName = env->NewStringUTF(textureImage.C_Str());
+            jclass texClass = env->FindClass("org/gearvrf/GVRContext");
 
-			if (texClass == NULL) {
-				// Couldn't find the class GVRContext.
-			} else {
-				jmethodID mID = env->GetStaticMethodID(texClass, "loadBitmap", "(Ljava/lang/String;)Landroid/graphics/Bitmap;");
-				if (mID == NULL) {
-					// No such method in Java side
-					// No interaction with Java side so apply default texture
-					std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
-					material->setTexture("main_texture", texture);
-					// Sets the default main texture
+            if (texClass == NULL) {
+                // Couldn't find the class GVRContext.
+            } else {
+                jmethodID mID = env->GetStaticMethodID(texClass, "loadBitmap", "(Ljava/lang/String;)Landroid/graphics/Bitmap;");
+                if (mID == NULL) {
+                    // No such method in Java side
+                    // No interaction with Java side so apply default texture
+                    std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
+                    material->setTexture("main_texture", texture);
+                    // Sets the default main texture
 
-				} else {
-					if ((ai_material->GetTextureCount(aiTextureType_DIFFUSE)) <= 0) {
-						aiColor3D matColor (0.f,0.f,0.f);
-						if(AI_SUCCESS != ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, matColor)) {
-							// No color or texture file found for the material so apply default texture
-							std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
-							material->setTexture("main_texture", texture);
-						} else {
-							// Material has color so sets the color
-							material->setVec3("color", glm::vec3(matColor.r, matColor.g, matColor.b));
-							float matOpacity = 1.0f;
-							if(AI_SUCCESS != ai_material->Get(AI_MATKEY_OPACITY, matOpacity)) {
-								// Material has opacity so sets the opacity
-								material->setFloat("opacity", matOpacity);
-							}
-						}
-					} else {
-						// About to enter Java side.
-						jobject mBitmap = env->CallStaticObjectMethod(texClass, mID, texFileName);
-						if(mBitmap == NULL)
-						{
-							// Null bitmap for texture file for mesh
-							// Applying default texture
-							std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
-							material->setTexture("main_texture", texture);
-						}
-						else
-						{
-							// Back to native side from Java side
-							// Applying actual texture
-							std::shared_ptr<Texture> texture(new BaseTexture(env, mBitmap));
-							material->setTexture("main_texture", texture);
-						}
-					}
-				}
-			}
+                } else {
+                    if ((ai_material->GetTextureCount(aiTextureType_DIFFUSE)) <= 0) {
+                        // No texture file found so apply default texture
+                        std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
+                        material->setTexture("main_texture", texture);
+                    } else {
+                        // About to enter Java side.
+                        jobject mBitmap = env->CallStaticObjectMethod(texClass, mID, texFileName);
+                        if(mBitmap == NULL)
+                        {
+                            // Null bitmap for texture file for mesh
+                            // Applying default texture
+                            std::shared_ptr<Texture> texture(new BaseTexture(env, bitmap));
+                            material->setTexture("main_texture", texture);
+                        }
+                        else
+                        {
+                            // Back to native side from Java side
+                            // Applying actual texture
+                            std::shared_ptr<Texture> texture(new BaseTexture(env, mBitmap));
+                            material->setTexture("main_texture", texture);
+                        }
+                    }
+                }
+            }
 
-			// Set the material to the render data
-			renderData->set_material(material);
+            // Set the material to the render data
+            renderData->set_material(material);
 
-			// Transformation
-			std::shared_ptr<Transform> transform(new Transform());
-			transform->set_owner_object(scnObject);
+            // Transformation
+            std::shared_ptr<Transform> transform(new Transform());
+            transform->set_owner_object(scnObject);
 
-			// Accumulated transformations of the node
-			aiMatrix4x4 aTransform = node->mTransformation * accumulatedTransform;
-			aiVector3t<float> scaling;
-			aiQuaterniont<float> rotation;
-			aiVector3t<float> position;
-			aTransform.Decompose(scaling, rotation, position);
-			int meshIndex = i;
-			transform->set_position(position.x, position.y, position.z);
-			transform->set_rotation(rotation.w, rotation.x, rotation.y, rotation.z);
-			transform->set_scale(scaling.x, scaling.y, scaling.z);
-			scnObject->attachTransform(scnObject, transform);
-			scnObject->attachRenderData(scnObject, renderData);
+            // Accumulated transformations of the node
+            aiMatrix4x4 aTransform = node->mTransformation * accumulatedTransform;
+            aiVector3t<float> scaling;
+            aiQuaterniont<float> rotation;
+            aiVector3t<float> position;
+            aTransform.Decompose(scaling, rotation, position);
+            int meshIndex = i;
+            transform->set_position(position.x, position.y, position.z);
+            transform->set_rotation(rotation.w, rotation.x, rotation.y, rotation.z);
+            transform->set_scale(scaling.x, scaling.y, scaling.z);
+            scnObject->attachTransform(scnObject, transform);
+            scnObject->attachRenderData(scnObject, renderData);
 
-			//Attaches the Scene Object to the Scene.
-			scnPtr->addSceneObject(scnObject);
-		} else {
-			//new RenderData class and perform all the operations
-		}
-	}
+            //Attaches the Scene Object to the Scene.
+            scnPtr->addSceneObject(scnObject);
+        } else {
+            //new RenderData class and perform all the operations
+        }
+    }
 
-	for(int i=0;i<node->mNumChildren;i++)
-	{
-		sceneRecursion(node->mChildren[i], aScene, scnPtr, env, obj, bitmap, accumulatedTransform);
-	}
+    for(int i=0;i<node->mNumChildren;i++)
+    {
+        sceneRecursion(node->mChildren[i], aScene, scnPtr, env, obj, bitmap, accumulatedTransform);
+    }
 }
 
 
 std::shared_ptr<Scene> AssimpImporter::loadScene(JNIEnv* env, jobject obj, jobject bitmap)
 {
-	//	Scene
-	std::shared_ptr<Scene> scenePtr(new Scene());
+    //  Scene
+    std::shared_ptr<Scene> scenePtr(new Scene());
 
-	// Left Camera
-	std::shared_ptr<Camera> leftCamera(new PerspectiveCamera());
-	leftCamera->set_render_mask(0x1);
+    // Left Camera
+    std::shared_ptr<Camera> leftCamera(new PerspectiveCamera());
+    leftCamera->set_render_mask(0x1);
 
-	//	Right Camera
-	std::shared_ptr<Camera> rightCamera(new PerspectiveCamera());
-	rightCamera->set_render_mask(0x2);
+    //  Right Camera
+    std::shared_ptr<Camera> rightCamera(new PerspectiveCamera());
+    rightCamera->set_render_mask(0x2);
 
-	//	Left Camera object and its transform
-	std::shared_ptr<SceneObject> leftCameraObject(new SceneObject());
-	std::shared_ptr<Transform> transformLeftCameraObject(new Transform());
-	transformLeftCameraObject->set_owner_object(leftCameraObject);
+    //  Left Camera object and its transform
+    std::shared_ptr<SceneObject> leftCameraObject(new SceneObject());
+    std::shared_ptr<Transform> transformLeftCameraObject(new Transform());
+    transformLeftCameraObject->set_owner_object(leftCameraObject);
 
-	float camera_separation_distance_ = 0.062f;
+    float camera_separation_distance_ = 0.062f;
 
-	//	Sets transform for the Left and the Right Camera on the Camera Rig
-	glm::vec3 leftCameraPosition = glm::vec3(-camera_separation_distance_ * 0.5f, 0.0f, 0.0f);
-	glm::vec3 rightCameraPosition = glm::vec3(camera_separation_distance_ * 0.5f, 0.0f, 0.0f);
+    //  Sets transform for the Left and the Right Camera on the Camera Rig
+    glm::vec3 leftCameraPosition = glm::vec3(-camera_separation_distance_ * 0.5f, 0.0f, 0.0f);
+    glm::vec3 rightCameraPosition = glm::vec3(camera_separation_distance_ * 0.5f, 0.0f, 0.0f);
 
-	transformLeftCameraObject->set_position(leftCameraPosition);
-	leftCameraObject->attachTransform(leftCameraObject, transformLeftCameraObject);
-	leftCameraObject->attachCamera(leftCameraObject, leftCamera);
+    transformLeftCameraObject->set_position(leftCameraPosition);
+    leftCameraObject->attachTransform(leftCameraObject, transformLeftCameraObject);
+    leftCameraObject->attachCamera(leftCameraObject, leftCamera);
 
-	//	Right Camera object and its transform
-	std::shared_ptr<SceneObject> rightCameraObject(new SceneObject());
-	std::shared_ptr<Transform> transformRightCameraObject(new Transform());
-	transformRightCameraObject->set_owner_object(rightCameraObject);
-	transformRightCameraObject->set_position(rightCameraPosition);
-	rightCameraObject->attachTransform(rightCameraObject, transformRightCameraObject);
-	rightCameraObject->attachCamera(rightCameraObject, rightCamera);
+    //  Right Camera object and its transform
+    std::shared_ptr<SceneObject> rightCameraObject(new SceneObject());
+    std::shared_ptr<Transform> transformRightCameraObject(new Transform());
+    transformRightCameraObject->set_owner_object(rightCameraObject);
+    transformRightCameraObject->set_position(rightCameraPosition);
+    rightCameraObject->attachTransform(rightCameraObject, transformRightCameraObject);
+    rightCameraObject->attachCamera(rightCameraObject, rightCamera);
 
-	//	Camera Rig and its transform
-	std::shared_ptr<SceneObject> cameraRigObject(new SceneObject());
-	std::shared_ptr<Transform> transformCameraRigObject(new Transform());
-	cameraRigObject->attachTransform(cameraRigObject, transformCameraRigObject);
-	std::shared_ptr<CameraRig> cameraRig(new CameraRig());
-	cameraRig->attachLeftCamera(leftCamera);
-	cameraRig->attachRightCamera(rightCamera);
-	cameraRigObject->attachCameraRig(cameraRigObject, cameraRig);
+    //  Camera Rig and its transform
+    std::shared_ptr<SceneObject> cameraRigObject(new SceneObject());
+    std::shared_ptr<Transform> transformCameraRigObject(new Transform());
+    cameraRigObject->attachTransform(cameraRigObject, transformCameraRigObject);
+    std::shared_ptr<CameraRig> cameraRig(new CameraRig());
+    cameraRig->attachLeftCamera(leftCamera);
+    cameraRig->attachRightCamera(rightCamera);
+    cameraRigObject->attachCameraRig(cameraRigObject, cameraRig);
 
-	//	Adds the Camera Rig Scene Object to the Scene
-	scenePtr->addSceneObject(cameraRigObject);
+    //  Adds the Camera Rig Scene Object to the Scene
+    scenePtr->addSceneObject(cameraRigObject);
 
-	//	Adds the Left and the Right Camera to the Camera Rig
-	cameraRigObject->addChildObject(cameraRigObject, leftCameraObject);
-	cameraRigObject->addChildObject(cameraRigObject, rightCameraObject);
+    //  Adds the Left and the Right Camera to the Camera Rig
+    cameraRigObject->addChildObject(cameraRigObject, leftCameraObject);
+    cameraRigObject->addChildObject(cameraRigObject, rightCameraObject);
 
-	//	Sets the Camera Rig as the main camera rig for the scene
-	scenePtr->set_main_camera_rig(cameraRig);
+    //  Sets the Camera Rig as the main camera rig for the scene
+    scenePtr->set_main_camera_rig(cameraRig);
 
-	//	Get the pointer to the scene
-	const aiScene *aScnPtr = assimp_importer_->GetScene();
+    //  Get the pointer to the scene
+    const aiScene *aScnPtr = assimp_importer_->GetScene();
 
-	// Default transformation
-	aiMatrix4x4 identityMatrix;
+    // Default transformation
+    aiMatrix4x4 identityMatrix;
 
-	// Start the scene recursion for all the nodes in the hierarchy
-	sceneRecursion(aScnPtr->mRootNode, aScnPtr, scenePtr, env, obj, bitmap, identityMatrix);
+    // Start the scene recursion for all the nodes in the hierarchy
+    sceneRecursion(aScnPtr->mRootNode, aScnPtr, scenePtr, env, obj, bitmap, identityMatrix);
 
-	//	Returns the scene pointer
-	return std::shared_ptr<Scene>(scenePtr);
+    //  Returns the scene pointer
+    return std::shared_ptr<Scene>(scenePtr);
 }
 }

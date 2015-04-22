@@ -16,23 +16,20 @@
 package org.gearvrf.gvrmodelloader;
 
 import org.gearvrf.GVRContext;
+import org.gearvrf.GVRSceneObject;
 import org.gearvrf.GVRScript;
 
 public class ModelViewManager extends GVRScript {
 
     @Override
     public void onInit(GVRContext gvrContext) {
-		gvrContext.getMainScene().getMainCameraRig().getLeftCamera().setBackgroundColor(0, 0, 0, 1);
-		gvrContext.getMainScene().getMainCameraRig().getRightCamera().setBackgroundColor(0, 0, 0, 1);
-		
-		// Loads the model
-		gvrContext.loadScene("sponza.dae");
-		
-		//Un-comment the following line to test the simple walled cube model
-		//gvrContext.loadScene("walled_cube.dae");
-		
-		// Sets a custom camera position
-		gvrContext.getMainScene().getMainCameraRig().getOwnerObject().getTransform().setPosition(5.0f, 5.0f, 0.0f);	
+        GVRSceneObject modelAsScenObject = gvrContext.loadModelAsSceneObject("sponza.dae"); //Use walled_cube.dae as file name to test the simple walled cube model
+
+        //Un-comment the following line to test the model as a complete scene
+        //gvrContext.loadScene("sponza.dae");   // Loads the model as a complete scene
+
+        gvrContext.getMainScene().addSceneObject(modelAsScenObject);
+        gvrContext.getMainScene().getMainCameraRig().getOwnerObject().getTransform().setPosition(5.0f, 5.0f, 0.0f);
     }
 
     @Override

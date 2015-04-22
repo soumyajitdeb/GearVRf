@@ -2,4 +2,5 @@ bin/
 gen/
 obj/
 ovr_mobile_sdk/
+GVRf/Framework/.settings/
 *.so

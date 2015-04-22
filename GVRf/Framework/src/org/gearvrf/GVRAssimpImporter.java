@@ -35,11 +35,11 @@ class GVRAssimpImporter extends GVRHybridObject {
     }
     
     /**
-     * @return Loads the 3D model.
+     * @return The GVRScene with the specified  3D model as a part of it.
      */
-    GVRScene loadScene(Bitmap bitmap)
+    GVRScene loadScene(Bitmap defaultBitmap, GVRContext gvrContext)
     {
-        return new GVRScene(getGVRContext(), NativeAssimpImporter.loadScene(getPtr(), bitmap));
+        return new GVRScene(getGVRContext(), NativeAssimpImporter.loadScene(getPtr(), defaultBitmap, gvrContext));
     }
     
     /**
@@ -57,6 +57,6 @@ class GVRAssimpImporter extends GVRHybridObject {
 
 class NativeAssimpImporter {
     static native int getNumberOfMeshes(long assimpImporter);
-    static native long loadScene(long assimpImporter, Bitmap bitmap);
+    static native long loadScene(long assimpImporter, Bitmap defaultBitmap, GVRContext gvrContext);
     static native long getMesh(long assimpImporter, int index);
 }

@@ -53,7 +53,7 @@ import android.view.KeyEvent;
 public abstract class GVRContext {
     private static final String TAG = Log.tag(GVRContext.class);
 
-    private static Context mContext = null;
+    private final Context mContext;
 
     /*
      * Fields and constants
@@ -297,49 +297,77 @@ public abstract class GVRContext {
     }
 
     /**
-     * Generates default color for missing textures in the modelling file.
-     *
-     */
-    private static final int WIDTH = 50;
-    private static final int HEIGHT = 50;
-    private static final int STRIDE = 64;    // must be >= WIDTH
-
-    private static int[] createColors() 
-    {
-        int[] colors = new int[STRIDE * HEIGHT];
-        for (int y = 0; y < HEIGHT; y++)
-        {
-            for (int x = 0; x < WIDTH; x++)
-            {
-                int r = x * 255 / (WIDTH - 1);
-                int g = y * 255 / (HEIGHT - 1);
-                int b = 255 - Math.min(r, g);
-                int a = Math.max(r, g);
-                colors[y * STRIDE + x] = (a << 24) | (r << 16) | (g << 8) | b;
-            }
-        }
-        return colors;
-    }   
-
-    /**
-     * Loads the complete scene from the imported 3D modelling file.
+     * Loads a 3D model file as a {@code GVRScene}.
+     * 
+     * This method and the
+     * {@linkplain #loadModelAsSceneObject(String)} are both capable of loading 
+     * a 3D model file with all its components. The {@linkplain #loadScene(String)}
+     * method is the best choices for loading a 3D model resources as a {@code GVRScene}
+     * and the {@linkplain #loadModelAsSceneObject(String)} is the best choice
+     * when trying to load 3D model as a {@code GVRSceneObject} 
      * 
      * @param fileName
-     *            The name of a 3D model file, relative to the assets directory.
-     *            The assets directory may contain an arbitrarily complex tree
-     *            of subdirectories; the file name can specify any location in
-     *            or under the assets directory.
+     *            The name of a file placed in asset or res folder. The asset
+     *            and res directory may contain an arbitrarily complex tree of
+     *            subdirectories; the file name can specify any location in or
+     *            under the assets and res directory.
      */
     public void loadScene(String fileName)
     {
-        GVRAssimpImporter assimpImporter = GVRImporter.readFileFromAssets(this, fileName);
+        GVRAssimpImporter assimpImporter = null;
+        try {
+            assimpImporter = GVRImporter.readFileFromResources(this, new GVRAndroidResource(this, fileName));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         //Default bitmap for objects whose texture are not present or there is some texture error
-        int[] mColors = createColors();
-        int[] colors = mColors;
-        Bitmap defaultBitmap = Bitmap.createBitmap(colors, 0, STRIDE, WIDTH, HEIGHT, Bitmap.Config.RGB_565);
+        Bitmap defaultBitmap = GVRAsynchronousResourceLoader.decodeStream((new GVRAndroidResource(this, R.drawable.__default_bitmap__)).getStream(), false);
+        
         //Scene
-        GVRScene completeScene = assimpImporter.loadScene(defaultBitmap);
+        GVRScene completeScene = assimpImporter.loadScene(defaultBitmap, this);
+        
+        // Sets the main scene with the model
         this.setMainScene(completeScene);
+    }
+
+    /**
+     * Loads a 3D model file.as a {@code GVRSceneObject}.
+     * 
+     * This method and the {@linkplain #loadScene(String)} are both capable of loading 
+     * a 3D model file with all its components. {@linkplain #loadModelAsSceneObject(String)} 
+     * methos is the best choice when trying to load 3D model resource as a 
+     * {@code GVRSceneObject} and the {@linkplain #loadScene(String)} method is the 
+     * best choices for loading a 3D model resources as a part of the {@code GVRScene}.
+     * 
+     * @param fileName
+     *            The name of a file placed in asset or res folder. The asset
+     *            and res directory may contain an arbitrarily complex tree of
+     *            subdirectories; the file name can specify any location in or
+     *            under the assets and res directory.
+     * 
+     * @return The 3D model as a {@code GVRSceneObject}.
+     */
+    public GVRSceneObject loadModelAsSceneObject(String fileName)
+    {
+        GVRAssimpImporter assimpImporter = null; 
+        try {
+            assimpImporter = GVRImporter.readFileFromResources(this, new GVRAndroidResource(this, fileName));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        //Default bitmap for objects whose texture are not present or there is some texture error
+        Bitmap defaultBitmap = GVRAsynchronousResourceLoader.decodeStream((new GVRAndroidResource(this, R.drawable.__default_bitmap__)).getStream(), false);
+        
+        //Scene
+        GVRScene completeScene = assimpImporter.loadScene(defaultBitmap, this);
+
+        GVRSceneObject sceneAsSceneObject = new GVRSceneObject(this);
+        GVRSceneObject[] wholeSceneObjects = completeScene.getWholeSceneObjects();
+        for (GVRSceneObject sceneObject:wholeSceneObjects)
+        {
+            sceneAsSceneObject.addChildObject(sceneObject);
+        }
+        return sceneAsSceneObject;
     }
 
     /**
@@ -365,7 +393,7 @@ public abstract class GVRContext {
      * @return The file as a bitmap, or {@code null} if file path does not exist
      *         or the file can not be decoded into a Bitmap.
      */
-    public static Bitmap loadBitmap(String fileName) {
+    public Bitmap loadBitmap(String fileName) {
         if (fileName == null) {
             throw new IllegalArgumentException("File name should not be null.");
         }
@@ -386,6 +414,32 @@ public abstract class GVRContext {
             // file!
             return bitmap;
         }
+    }
+
+    /**
+     * Loads file placed in the assets or res folder, as a {@link Bitmap}.
+     * 
+     * @param fileName
+     *            The name of a file placed in asset or res folder. The asset
+     *            and res directory may contain an arbitrarily complex tree of
+     *            subdirectories; the file name can specify any location in or
+     *            under the assets and res directory.
+     * @return The file as a bitmap, or a default bitmap if file path does not exist
+     *         or {@code null} if the file can not be decoded into a Bitmap.
+     */
+
+    public Bitmap loadBitmapFromRes(String fileName) {
+        GVRAndroidResource resource = null;
+        try {
+            resource = new GVRAndroidResource(this, fileName);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return GVRAsynchronousResourceLoader.decodeStream((new GVRAndroidResource(this, R.drawable.__default_bitmap__)).getStream(), false);
+        }
+        assertGLThread();
+        Bitmap bitmap = GVRAsynchronousResourceLoader.decodeStream(resource.getStream(), false);
+        resource.closeStream();
+        return bitmap;
     }
 
     /**

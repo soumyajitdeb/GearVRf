@@ -21,7 +21,6 @@ import android.os.Bundle;
 import org.gearvrf.GVRActivity;
 
 public class ModelActivity extends GVRActivity {
-	
     @Override
     protected void onCreate(Bundle icicle) {
         super.onCreate(icicle);

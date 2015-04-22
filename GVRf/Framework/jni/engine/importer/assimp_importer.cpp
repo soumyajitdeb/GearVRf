@@ -55,6 +55,11 @@ std::shared_ptr<Mesh> AssimpImporter::getMesh(int index) {
             tex_coords.push_back(
                     glm::vec2(ai_mesh->mTextureCoords[0][i].x,
                             ai_mesh->mTextureCoords[0][i].y));
+            // Sets the texture repeat flag to TRUE if either of the 
+            // texture coordinate is greater than 1
+            if((ai_mesh->mTextureCoords[0][i].x) > 1 || (ai_mesh->mTextureCoords[0][i].y) > 1) {
+                mesh->setTextureRepeatFlag(true);
+            }
         }
         mesh->set_tex_coords(std::move(tex_coords));
     }
@@ -78,88 +83,87 @@ void AssimpImporter::scene_recursion(aiNode* assimp_node, const aiScene* assimp_
     {
         std::shared_ptr<SceneObject> gvr_scene_object(new SceneObject());
 
-        // Creates a scene object for the node children meshes.
-        if(gvr_scene_object->render_data() == NULL)
-        {
-            // Scene Object has no render data.
+        // Mesh
+        std::shared_ptr<Mesh> gvr_mesh = getMesh(assimp_node->mMeshes[i]);
 
-            // Mesh
-            std::shared_ptr<Mesh> gvr_mesh = getMesh(assimp_node->mMeshes[i]);
+        // New render data object.
+        std::shared_ptr<RenderData> scene_object_render_data(new RenderData());
 
-            // New render data object.
-            std::shared_ptr<RenderData> scene_object_render_data(new RenderData());
+        // Set the mesh to the render data.
+        scene_object_render_data->set_mesh(gvr_mesh);
 
-            // Set the mesh to the render data.
-            scene_object_render_data->set_mesh(gvr_mesh);
+        // Set material.
+        aiMesh* assimp_mesh = assimp_scene->mMeshes[assimp_node->mMeshes[i]];
+        aiMaterial* assimp_material = assimp_scene->mMaterials[assimp_mesh->mMaterialIndex];
 
-            // Set material.
-            aiMesh* assimp_mesh = assimp_scene->mMeshes[assimp_node->mMeshes[i]];
-            aiMaterial* assimp_material = assimp_scene->mMaterials[assimp_mesh->mMaterialIndex];
+        // Defines a shader with shader type 0. UNLIT_SHADER = 0
+        std::shared_ptr<Material> gvr_material(new Material(Material::ShaderType::UNLIT_SHADER));
 
-            // Defines a shader with shader type 0. UNLIT_SHADER = 0
-            std::shared_ptr<Material> gvr_material(new Material(Material::ShaderType::UNLIT_SHADER));
+        // Actual texture image
+        aiString assimp_texture_file_name;
+        assimp_material->GetTexture(aiTextureType_DIFFUSE, i, &assimp_texture_file_name);
+        jstring texture_file_name = env->NewStringUTF(assimp_texture_file_name.C_Str());
 
-            // Actual texture image
-            aiString assimp_texture_file_name;
-            assimp_material->GetTexture(aiTextureType_DIFFUSE, i, &assimp_texture_file_name);
-            jstring texture_file_name = env->NewStringUTF(assimp_texture_file_name.C_Str());
+        // Default texture
 
-            // Default texture
-            std::shared_ptr<Texture> default_texture(new BaseTexture(env, default_bitmap));
+        bool repeat_flag = false;
 
-                if (method_ID == NULL) {
-                    // No such method in Java side
-                    // No interaction with Java side so apply default texture
+        if(gvr_mesh->getTextureRepeatFlag()) {
+            repeat_flag = true;
+        }
 
+        std::shared_ptr<Texture> default_texture(new BaseTexture(env, default_bitmap, repeat_flag));
+
+            if (method_ID == NULL) {
+                // No such method in Java side
+                // No interaction with Java side so apply default texture
+
+                gvr_material->setTexture("main_texture", default_texture);
+            } else {
+                if ((assimp_material->GetTextureCount(aiTextureType_DIFFUSE)) <= 0) {
+                    // No texture file found so apply default texture
                     gvr_material->setTexture("main_texture", default_texture);
                 } else {
-                    if ((assimp_material->GetTextureCount(aiTextureType_DIFFUSE)) <= 0) {
-                        // No texture file found so apply default texture
+                    // About to enter Java side.
+                    jobject actual_texture_bitmap = env->CallObjectMethod(gvr_context, method_ID, texture_file_name);
+                    if(actual_texture_bitmap == NULL)
+                    {
+                        // Null bitmap for texture file for mesh
+                        // Applying default texture
                         gvr_material->setTexture("main_texture", default_texture);
-                    } else {
-                        // About to enter Java side.
-                        jobject actual_texture_bitmap = env->CallObjectMethod(gvr_context, method_ID, texture_file_name);
-                        if(actual_texture_bitmap == NULL)
-                        {
-                            // Null bitmap for texture file for mesh
-                            // Applying default texture
-                            gvr_material->setTexture("main_texture", default_texture);
-                        }
-                        else
-                        {
-                            // Back to native side from Java side
-                            // Applying actual texture
-                            std::shared_ptr<Texture> actual_texture(new BaseTexture(env, actual_texture_bitmap));
-                            gvr_material->setTexture("main_texture", actual_texture);
-                        }
+                    }
+                    else
+                    {
+                        // Back to native side from Java side
+                        // Applying actual texture
+                        std::shared_ptr<Texture> actual_texture(new BaseTexture(env, actual_texture_bitmap, repeat_flag));
+                        gvr_material->setTexture("main_texture", actual_texture);
                     }
                 }
+            }
 
-            // Set the material to the render data
-            scene_object_render_data->set_material(gvr_material);
+        // Set the material to the render data
+        scene_object_render_data->set_material(gvr_material);
 
-            // Transformation
-            std::shared_ptr<Transform> gvr_transform(new Transform());
-            gvr_transform->set_owner_object(gvr_scene_object);
+        // Transformation
+        std::shared_ptr<Transform> gvr_transform(new Transform());
+        gvr_transform->set_owner_object(gvr_scene_object);
 
-            // Accumulated transformations of the node
-            aiMatrix4x4 assimp_transform = assimp_node->mTransformation * accumulated_transform;
-            aiVector3t<float> assimp_node_scaling;
-            aiQuaterniont<float> assimp_node_rotation;
-            aiVector3t<float> assimp_node_position;
-            assimp_transform.Decompose(assimp_node_scaling, assimp_node_rotation, assimp_node_position);
-            int assimp_mesh_index = i;
-            gvr_transform->set_position(assimp_node_position.x, assimp_node_position.y, assimp_node_position.z);
-            gvr_transform->set_rotation(assimp_node_rotation.w, assimp_node_rotation.x, assimp_node_rotation.y, assimp_node_rotation.z);
-            gvr_transform->set_scale(assimp_node_scaling.x, assimp_node_scaling.y, assimp_node_scaling.z);
-            gvr_scene_object->attachTransform(gvr_scene_object, gvr_transform);
-            gvr_scene_object->attachRenderData(gvr_scene_object, scene_object_render_data);
+        // Accumulated transformations of the node
+        aiMatrix4x4 assimp_transform = assimp_node->mTransformation * accumulated_transform;
+        aiVector3t<float> assimp_node_scaling;
+        aiQuaterniont<float> assimp_node_rotation;
+        aiVector3t<float> assimp_node_position;
+        assimp_transform.Decompose(assimp_node_scaling, assimp_node_rotation, assimp_node_position);
+        int assimp_mesh_index = i;
+        gvr_transform->set_position(assimp_node_position.x, assimp_node_position.y, assimp_node_position.z);
+        gvr_transform->set_rotation(assimp_node_rotation.w, assimp_node_rotation.x, assimp_node_rotation.y, assimp_node_rotation.z);
+        gvr_transform->set_scale(assimp_node_scaling.x, assimp_node_scaling.y, assimp_node_scaling.z);
+        gvr_scene_object->attachTransform(gvr_scene_object, gvr_transform);
+        gvr_scene_object->attachRenderData(gvr_scene_object, scene_object_render_data);
 
-            //Attaches the Scene Object to the Scene.
-            gvr_scene_pointer->addSceneObject(gvr_scene_object);
-        } else {
-            //new RenderData class and perform all the operations
-        }
+        //Attaches the Scene Object to the Scene.
+        gvr_scene_pointer->addSceneObject(gvr_scene_object);
     }
 
     for(int i=0;i<assimp_node->mNumChildren;i++)

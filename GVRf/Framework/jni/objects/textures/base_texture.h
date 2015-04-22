@@ -31,14 +31,14 @@
 namespace gvr {
 class BaseTexture: public Texture {
 public:
-    explicit BaseTexture(JNIEnv* env, jobject bitmap) :
-            Texture(new GLTexture(TARGET)) {
+    explicit BaseTexture(JNIEnv* env, jobject bitmap, bool repeat_flag=false) :
+            Texture(new GLTexture(TARGET, repeat_flag)) {
         AndroidBitmapInfo info;
         void *pixels;
         int ret;
         if(bitmap == NULL){
-        	std::string error = "new BaseTexture() failed! Input bitmap is NULL.";
-        	throw error;
+            std::string error = "new BaseTexture() failed! Input bitmap is NULL.";
+            throw error;
         }
         if ((ret = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
             std::string error = "AndroidBitmap_getInfo () failed! error = "

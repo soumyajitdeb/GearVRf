@@ -67,7 +67,7 @@ public:
         return assimp_importer_->GetScene()->mNumMeshes;
     }
     void scene_recursion(aiNode* assimp_node, const aiScene* assimp_scene, std::shared_ptr<Scene> 
-gvr_scene_pointer, JNIEnv * env, jobject obj, jobject default_bitmap, jobject gvr_context, jmethodID 
+gvr_scene_pointer, JNIEnv * env, jobject default_bitmap, jobject gvr_context, jmethodID 
 method_ID, aiMatrix4x4 accumulated_transform);
     std::shared_ptr<Scene> load_scene(JNIEnv* env, jobject obj, jobject bitmap, jobject gvr_context);
     std::shared_ptr<Mesh> getMesh(int index);

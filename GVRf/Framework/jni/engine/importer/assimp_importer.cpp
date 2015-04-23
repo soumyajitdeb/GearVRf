@@ -77,7 +77,7 @@ std::shared_ptr<Mesh> AssimpImporter::getMesh(int index) {
     return std::shared_ptr < Mesh > (mesh);
 }
 
-void AssimpImporter::scene_recursion(aiNode* assimp_node, const aiScene* assimp_scene, std::shared_ptr<Scene> gvr_scene_pointer, JNIEnv * env, jobject obj, jobject default_bitmap, jobject gvr_context, jmethodID method_ID, aiMatrix4x4 accumulated_transform)
+void AssimpImporter::scene_recursion(aiNode* assimp_node, const aiScene* assimp_scene, std::shared_ptr<Scene> gvr_scene_pointer, JNIEnv * env, jobject default_bitmap, jobject gvr_context, jmethodID method_ID, aiMatrix4x4 accumulated_transform)
 {
     for(int i=0; i < assimp_node->mNumMeshes; i++)
     {
@@ -168,7 +168,7 @@ void AssimpImporter::scene_recursion(aiNode* assimp_node, const aiScene* assimp_
 
     for(int i=0;i<assimp_node->mNumChildren;i++)
     {
-        scene_recursion(assimp_node->mChildren[i], assimp_scene, gvr_scene_pointer, env, obj, default_bitmap, gvr_context, method_ID, accumulated_transform);
+        scene_recursion(assimp_node->mChildren[i], assimp_scene, gvr_scene_pointer, env, default_bitmap, gvr_context, method_ID, accumulated_transform);
     }
 }
 
@@ -244,7 +244,7 @@ std::shared_ptr<Scene> AssimpImporter::load_scene(JNIEnv* env, jobject obj, jobj
     jmethodID method_ID = env->GetMethodID(java_bitmap_method_class, "loadBitmapFromRes", "(Ljava/lang/String;)Landroid/graphics/Bitmap;");
 
     // Start the scene recursion for all the nodes in the hierarchy
-    scene_recursion(assimp_scene_pointer->mRootNode, assimp_scene_pointer, gvr_scene_poniter, env, obj, default_bitmap, gvr_context, method_ID, 
+    scene_recursion(assimp_scene_pointer->mRootNode, assimp_scene_pointer, gvr_scene_poniter, env, default_bitmap, gvr_context, method_ID, 
     identity_matrix);
 
     //  Returns the scene pointer

@@ -23,7 +23,7 @@ public class ModelViewManager extends GVRScript {
 
     @Override
     public void onInit(GVRContext gvrContext) {
-        GVRSceneObject modelAsScenObject = gvrContext.loadModelAsSceneObject("sponza.dae"); //Use walled_cube.dae as file name to test the simple walled cube model
+        GVRSceneObject modelAsScenObject = gvrContext.loadModel("sponza.dae"); //Use walled_cube.dae as file name to test the simple walled cube model
 
         //Un-comment the following line to test the model as a complete scene
         //gvrContext.loadScene("sponza.dae");   // Loads the model as a complete scene

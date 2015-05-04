@@ -241,7 +241,7 @@ std::shared_ptr<Scene> AssimpImporter::load_scene(JNIEnv* env, jobject obj, jobj
 
     // Get bitmap method id
     jclass java_bitmap_method_class = env->GetObjectClass(gvr_context);
-    jmethodID method_ID = env->GetMethodID(java_bitmap_method_class, "loadBitmapFromRes", "(Ljava/lang/String;)Landroid/graphics/Bitmap;");
+    jmethodID method_ID = env->GetMethodID(java_bitmap_method_class, "loadBitmapFromResOrAsset", "(Ljava/lang/String;)Landroid/graphics/Bitmap;");
 
     // Start the scene recursion for all the nodes in the hierarchy
     scene_recursion(assimp_scene_pointer->mRootNode, assimp_scene_pointer, gvr_scene_pointer, env, default_bitmap, gvr_context, method_ID, 

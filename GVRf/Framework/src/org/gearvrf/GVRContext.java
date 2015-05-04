@@ -372,7 +372,7 @@ public abstract class GVRContext {
     }
 
     /**
-     * Loads file placed in the assets folder, as a {@link Bitmap}.
+     * Loads file placed in the assets or resource folder, as a {@link Bitmap}.
      * 
      * <p>
      * Note that this method may take hundreds of milliseconds to return: unless
@@ -387,10 +387,10 @@ public abstract class GVRContext {
      * more control over the image size.
      * 
      * @param fileName
-     *            The name of a file, relative to the assets directory. The
+     *            The name of a file, relative to the assets or res directory. The
      *            assets directory may contain an arbitrarily complex tree of
      *            subdirectories; the file name can specify any location in or
-     *            under the assets directory.
+     *            under the assets or res directory.
      * @return The file as a bitmap, or {@code null} if file path does not exist
      *         or the file can not be decoded into a Bitmap.
      */
@@ -398,38 +398,6 @@ public abstract class GVRContext {
         if (fileName == null) {
             throw new IllegalArgumentException("File name should not be null.");
         }
-        InputStream stream = null;
-        Bitmap bitmap = null;
-        try {
-            try {
-                stream = mContext.getAssets().open(fileName);
-                return bitmap = BitmapFactory.decodeStream(stream);
-            } finally {
-                if (stream != null) {
-                    stream.close();
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            // Don't discard a valid Bitmap because of an IO error closing the
-            // file!
-            return bitmap;
-        }
-    }
-
-    /**
-     * Loads file placed in the assets or res folder, as a {@link Bitmap}.
-     * 
-     * @param fileName
-     *            The name of a file placed in asset or res folder. The asset
-     *            and res directory may contain an arbitrarily complex tree of
-     *            sub directories; the file name can specify any location in or
-     *            under the assets and res directory.
-     * @return The file as a bitmap, or a default bitmap if file path does not exist
-     *         or {@code null} if the file can not be decoded into a Bitmap.
-     */
-
-    public Bitmap loadBitmapFromResOrAsset(String fileName) {
         GVRAndroidResource resource = null;
         try {
             String tempFileName = "";
@@ -456,7 +424,6 @@ public abstract class GVRContext {
             e.printStackTrace();
             return GVRAsynchronousResourceLoader.decodeStream((new GVRAndroidResource(this, R.drawable.__default_bitmap__)).getStream(), false);
         }
-        assertGLThread();
         Bitmap bitmap = GVRAsynchronousResourceLoader.decodeStream(resource.getStream(), false);
         resource.closeStream();
         return bitmap;

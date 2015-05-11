@@ -13,10 +13,13 @@
  * limitations under the License.
  */
 
-
 package org.gearvrf;
 
+import java.util.concurrent.Future;
+
 import org.gearvrf.utility.Colors;
+import org.gearvrf.utility.Threads;
+import static org.gearvrf.utility.Preconditions.*;
 
 import android.graphics.Color;
 
@@ -147,6 +150,10 @@ public class GVRMaterial extends GVRHybridObject implements
         setTexture(MAIN_TEXTURE, texture);
     }
 
+    public void setMainTexture(Future<GVRTexture> texture) {
+        setTexture(MAIN_TEXTURE, texture);
+    }
+
     /**
      * Get the {@code color} uniform.
      * 
@@ -261,7 +268,23 @@ public class GVRMaterial extends GVRHybridObject implements
     }
 
     public void setTexture(String key, GVRTexture texture) {
+        checkStringNotNullOrEmpty("key", key);
+        checkNotNull("texture", texture);
         NativeMaterial.setTexture(getPtr(), key, texture.getPtr());
+    }
+
+    public void setTexture(final String key, final Future<GVRTexture> texture) {
+        Threads.spawn(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    setTexture(key, texture.get());
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     public float getFloat(String key) {
@@ -269,6 +292,8 @@ public class GVRMaterial extends GVRHybridObject implements
     }
 
     public void setFloat(String key, float value) {
+        checkStringNotNullOrEmpty("key", key);
+        checkFloatNotNaNOrInfinity("value", value);
         NativeMaterial.setFloat(getPtr(), key, value);
     }
 
@@ -277,6 +302,7 @@ public class GVRMaterial extends GVRHybridObject implements
     }
 
     public void setVec2(String key, float x, float y) {
+        checkStringNotNullOrEmpty("key", key);
         NativeMaterial.setVec2(getPtr(), key, x, y);
     }
 
@@ -285,6 +311,7 @@ public class GVRMaterial extends GVRHybridObject implements
     }
 
     public void setVec3(String key, float x, float y, float z) {
+        checkStringNotNullOrEmpty("key", key);
         NativeMaterial.setVec3(getPtr(), key, x, y, z);
     }
 
@@ -293,6 +320,7 @@ public class GVRMaterial extends GVRHybridObject implements
     }
 
     public void setVec4(String key, float x, float y, float z, float w) {
+        checkStringNotNullOrEmpty("key", key);
         NativeMaterial.setVec4(getPtr(), key, x, y, z, w);
     }
 
@@ -305,9 +333,11 @@ public class GVRMaterial extends GVRHybridObject implements
     public void setMat4(String key, float x1, float y1, float z1, float w1,
             float x2, float y2, float z2, float w2, float x3, float y3,
             float z3, float w3, float x4, float y4, float z4, float w4) {
+        checkStringNotNullOrEmpty("key", key);
         NativeMaterial.setMat4(getPtr(), key, x1, y1, z1, w1, x2, y2, z2, w2,
                 x3, y3, z3, w3, x4, y4, z4, w4);
     }
+
 }
 
 class NativeMaterial {

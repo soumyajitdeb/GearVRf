@@ -90,10 +90,6 @@ LOCAL_SRC_FILES += $(FILE_LIST:$(LOCAL_PATH)/%=%)
 FILE_LIST := $(wildcard $(LOCAL_PATH)/util/*.cpp)
 LOCAL_SRC_FILES += $(FILE_LIST:$(LOCAL_PATH)/%=%)
 
-include $(CLEAR_VARS)
-LOCAL_MODULE := jassimp
-LOCAL_SRC_FILES :=  jassimp/jassimp.cpp
-
 #LOCAL_STATIC_LIBRARIES += staticAssimp
 LOCAL_SHARED_LIBRARIES := assimp
 

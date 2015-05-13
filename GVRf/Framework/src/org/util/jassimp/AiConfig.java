@@ -2,7 +2,7 @@
  * $Revision$
  * $Date$
  */
-package jassimp;
+package org.util.jassimp;
 
 
 /**
